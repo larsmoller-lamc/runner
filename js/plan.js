@@ -85,7 +85,7 @@ const ROTATION = [
   ]},
   { fase: "Stabil fase", note: "Progression (uge B)", trainings: [
     { type: "rolig", distance: 8, description: "8 km roligt", detail: "Snakke-tempo." },
-    { type: "tempo", distance: 12, description: "12 km progressiv", detail: "6 km rolig, så 4 km stabil (ca. 6:00/km), afslut med 2 km i 5:40/km. Lær at løbe hurtigt på trætte ben." },
+    { type: "progressiv", distance: 12, description: "12 km progressiv", detail: "6 km rolig, så 4 km stabil (ca. 6:00/km), afslut med 2 km i 5:40/km. Lær at løbe hurtigt på trætte ben." },
     { type: "lang", distance: 21, description: "21 km roligt (lang tur)", detail: "Halvmaraton-distancen. Meget roligt tempo hele vejen. Vand + gel." }
   ]},
   { fase: "Stabil fase", note: "Let uge (uge C)", trainings: [

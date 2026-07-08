@@ -26,6 +26,9 @@
   --lightblue-hi: #4b87c7;
   --lightblue-lo: #285a91;
 
+  --progressiv: #0E8577;
+  --stabil: #B8860B;
+
   --ok: #2a9d5a;
   --warn: #d97706;
   --danger: #dc2f2f;
@@ -301,10 +304,11 @@ body {
   border-radius: 4px;
   color: var(--paper);
 }
-.type--rolig    { background: var(--lightblue); }
-.type--tempo    { background: var(--accent); }
-.type--lang     { background: var(--base); }
-.type--interval { background: var(--tag-plum); }
+.type--rolig      { background: var(--lightblue); }
+.type--tempo      { background: var(--accent); }
+.type--progressiv { background: var(--progressiv); }
+.type--lang       { background: var(--base); }
+.type--interval   { background: var(--tag-plum); }
 
 .training-dist { font-weight: 800; font-size: 15px; color: var(--base); letter-spacing: -0.2px; }
 
@@ -425,7 +429,7 @@ body {
   border-radius: 4px;
   color: var(--paper);
 }
-.guide-chip--neutral { background: var(--ink-mute); }
+.type--stabil { background: var(--stabil); }
 
 /* ===== Extend button ===== */
 .extend { text-align: center; margin-top: 24px; }

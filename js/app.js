@@ -3,7 +3,8 @@ import { loadCompletions, saveCompletion, deleteCompletion, isFirebaseActive, wa
 const TYPE_LABEL = {
   rolig: "Rolig",
   tempo: "Tempo",
-  lang: "Lang tur",
+  progressiv: "Progressiv",
+  lang: "Lang",
   interval: "Interval"
 };
 
