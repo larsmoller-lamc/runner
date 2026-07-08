@@ -45,6 +45,7 @@
   <nav class="tabs">
     <button class="tab-btn tab-btn--active" data-tab="tab-plan">Plan</button>
     <button class="tab-btn" data-tab="tab-log">Logbog</button>
+    <button class="tab-btn" data-tab="tab-guide">Guide</button>
   </nav>
 
   <main>
@@ -57,6 +58,93 @@
 
     <section id="tab-log" class="tab-panel">
       <ul id="log-list" class="log"></ul>
+    </section>
+
+    <section id="tab-guide" class="tab-panel">
+      <div class="guide">
+
+        <h2 class="guide-h">Målsætning</h2>
+        <p class="guide-p">Halvmaraton under 2 timer = <strong>ca. 5:40/km i snit</strong>. Byg tempoet gradvist op — det tager måneder.</p>
+
+        <table class="guide-table">
+          <thead>
+            <tr><th>Type</th><th>Tempo</th><th>Følelse</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="guide-chip type--rolig">Rolig</span></td><td>6:15–6:45/km</td><td>Snakke</td></tr>
+            <tr><td><span class="guide-chip guide-chip--neutral">Stabil</span></td><td>5:55–6:05/km</td><td>Kontrolleret</td></tr>
+            <tr><td><span class="guide-chip type--tempo">Tempo</span></td><td>5:35–5:45/km</td><td>Arbejdende</td></tr>
+            <tr><td><span class="guide-chip type--interval">Interval</span></td><td>5:10–5:25/km</td><td>Presset</td></tr>
+          </tbody>
+        </table>
+        <p class="guide-note">I starten løber du langsommere — tempoerne justeres naturligt op over måneder.</p>
+
+        <h2 class="guide-h">Træningstyper</h2>
+
+        <article class="guide-card">
+          <h3 class="guide-card-h"><span class="guide-chip type--rolig">Rolig tur</span></h3>
+          <ul class="guide-ul">
+            <li><strong>Tempo:</strong> Snakke-tempo — du kan tale hele sætninger (6:15–6:45/km).</li>
+            <li><strong>Hvordan:</strong> Jævnt, afslappet tempo hele vejen.</li>
+            <li><strong>Formål:</strong> Restitution og volumen uden slid.</li>
+          </ul>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card-h"><span class="guide-chip type--lang">Lang tur</span></h3>
+          <ul class="guide-ul">
+            <li><strong>Tempo:</strong> Roligt hele vejen — ca. 6:20–6:40/km. Distancen er det vigtige, ikke farten.</li>
+            <li><strong>Hvordan:</strong> Find et overkommeligt tempo du kan holde jævnt gennem hele turen.</li>
+            <li><strong>Ekstra:</strong> Fra 15 km og op: tag vand med, øv dig i gel/energi undervejs.</li>
+          </ul>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card-h"><span class="guide-chip type--tempo">Tempo-tur</span></h3>
+          <ul class="guide-ul">
+            <li><strong>Opvarmning:</strong> 10–15 min roligt (2 km minimum) før du starter tempo-blokkene.</li>
+            <li><strong>Tempo:</strong> HM-fart ca. 5:35–5:45/km. Arbejdende, men kontrolleret.</li>
+            <li><strong>Pause mellem blokke:</strong> Rolig jog (2–3 min), ikke stå stille.</li>
+            <li><strong>Afslut:</strong> 5–10 min afjog roligt.</li>
+          </ul>
+          <p class="guide-p-sub">Eksempel: "5 km med 3 × 5 min tempo" = ca. 1 km opvarmning + 3 tempo-blokke à 5 min med 2–3 min jog imellem + afjog.</p>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card-h"><span class="guide-chip guide-chip--neutral">Progressiv tur</span></h3>
+          <ul class="guide-ul">
+            <li><strong>Princip:</strong> Start roligt, øg tempoet gradvist så de sidste par km er hurtigst — men ikke udmattende.</li>
+            <li><strong>Eksempel (12 km progressiv):</strong> 6 km roligt (6:30/km) → 4 km stabilt (6:00/km) → 2 km i HM-tempo (5:40/km).</li>
+            <li><strong>Formål:</strong> Lære at løbe hurtigt på trætte ben.</li>
+          </ul>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card-h"><span class="guide-chip type--interval">Interval / fartleg</span></h3>
+          <ul class="guide-ul">
+            <li><strong>Opvarmning:</strong> 10–15 min roligt + 2–3 stigningsløb (kort acceleration).</li>
+            <li><strong>Tempo:</strong> Hurtigere end tempo — ca. 5:10–5:25/km i korte stræk.</li>
+            <li><strong>Pause:</strong> Rolig jog imellem — ikke stå stille (medmindre der står "IT" med længere pause).</li>
+            <li><strong>Afjog:</strong> 5–10 min roligt bagefter.</li>
+          </ul>
+        </article>
+
+        <h2 class="guide-h">Før hård træning</h2>
+        <ul class="guide-ul">
+          <li><strong>Altid 10–15 min opvarmning</strong> før tempo, interval eller test.</li>
+          <li>Ved interval: læg 2–3 <strong>stigningsløb</strong> ind — gang → progressivt hurtigere løb i 30–60 sek.</li>
+          <li><strong>Afjog</strong> 5–10 min bagefter, selv når du er træt. Det er en god investering.</li>
+        </ul>
+
+        <h2 class="guide-h">Lyt til kroppen</h2>
+        <ul class="guide-ul">
+          <li>2–3 dages mellemrum mellem hårde pas (tempo, interval, lang tur).</li>
+          <li>Løbeskader er næsten altid <strong>overbelastning</strong> — tålmodighed er dit vigtigste værktøj.</li>
+          <li>Bliver du syg eller skadet: start roligt op igen. Man kan tabe mere end man kan vinde ved at forcere det.</li>
+          <li>Hver 3. uge er let — det er der du bliver stærkere.</li>
+        </ul>
+
+      </div>
     </section>
   </main>
 
