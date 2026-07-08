@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+.vscode/
+.idea/
+*.log
+
+# Hvis du vil holde dine Firebase-keys ude af repo,
+# så kopier firebase-config.js til firebase-config.local.js
+# og tilføj dette. Til personligt brug er det dog fint at
+# committe konfigurationen — API-nøglen er ikke hemmelig,
+# så længe Firestore rules er strammet.
+# js/firebase-config.js

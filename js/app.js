@@ -1,4 +1,4 @@
-import { loadCompletions, saveCompletion, deleteCompletion, isFirebaseActive, waitReady } from "./storage.js";
+import { loadCompletions, saveCompletion, deleteCompletion, isFirebaseActive, waitReady, lastError } from "./storage.js";
 
 const TYPE_LABEL = {
   rolig: "Rolig",
@@ -8,12 +8,10 @@ const TYPE_LABEL = {
 };
 
 let completions = [];
-let plan = generatePlan(24); // start med 24 uger, kan udvides
+let plan = generatePlan(24);
 
 // ==== Helpers ====
-function trainingKey(uge, index) {
-  return `u${uge}-t${index}`;
-}
+function trainingKey(uge, index) { return `u${uge}-t${index}`; }
 function findCompletion(uge, index) {
   return completions.find(c => c.uge === uge && c.trainingIndex === index);
 }
@@ -24,7 +22,6 @@ function formatPace(seconds) {
   return `${m}:${s.toString().padStart(2, "0")}/km`;
 }
 function parsePace(str) {
-  // Accepterer "5:40" eller "5.40" eller "340" (sekunder)
   if (!str) return null;
   str = str.trim().replace(",", ".");
   if (str.includes(":")) {
@@ -51,13 +48,24 @@ function formatDate(iso) {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric" });
 }
+function isValidUrl(str) {
+  if (!str) return false;
+  try {
+    const u = new URL(str.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch { return false; }
+}
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
 
 // ==== Rendering ====
 function renderPlan() {
   const container = document.getElementById("plan-container");
   container.innerHTML = "";
 
-  // Gruppér efter fase
   const phases = {};
   plan.forEach(week => {
     if (!phases[week.fase]) phases[week.fase] = [];
@@ -67,7 +75,7 @@ function renderPlan() {
   for (const phaseName of Object.keys(phases)) {
     const phaseEl = document.createElement("section");
     phaseEl.className = "phase";
-    phaseEl.innerHTML = `<h2 class="phase-title">${phaseName}</h2>`;
+    phaseEl.innerHTML = `<h2 class="phase-title">${escapeHtml(phaseName)}</h2>`;
 
     for (const week of phases[phaseName]) {
       const totalKm = week.trainings.reduce((s, t) => s + t.distance, 0);
@@ -81,7 +89,7 @@ function renderPlan() {
         <header class="week-head">
           <div class="week-head-left">
             <span class="week-num">Uge ${week.uge}</span>
-            <span class="week-note">${week.note}</span>
+            <span class="week-note">${escapeHtml(week.note)}</span>
           </div>
           <div class="week-head-right">
             <span class="week-progress">${doneCount}/${totalCount}</span>
@@ -103,8 +111,8 @@ function renderPlan() {
                 <span class="training-type type--${t.type}">${TYPE_LABEL[t.type] || t.type}</span>
                 <span class="training-dist">${t.distance} km</span>
               </span>
-              <span class="training-desc">${t.description}</span>
-              ${done ? `<span class="training-done-line">${formatDate(done.date)} · ${done.distance} km · ${formatPace(done.paceSeconds)}</span>` : ""}
+              <span class="training-desc">${escapeHtml(t.description)}</span>
+              ${done ? `<span class="training-done-line">${formatDate(done.date)} · ${done.distance} km · ${formatPace(done.paceSeconds)}${done.routeUrl ? " · 🗺" : ""}</span>` : ""}
             </span>
           </button>
         `;
@@ -116,7 +124,6 @@ function renderPlan() {
     container.appendChild(phaseEl);
   }
 
-  // Event delegation
   container.querySelectorAll(".training-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const uge = parseInt(btn.dataset.uge, 10);
@@ -136,24 +143,30 @@ function renderLog() {
   completions.forEach(c => {
     const li = document.createElement("li");
     li.className = "log-item";
+    const routeLink = c.routeUrl
+      ? `<a class="log-route" href="${escapeHtml(c.routeUrl)}" target="_blank" rel="noopener">🗺 Åbn rute</a>`
+      : "";
     li.innerHTML = `
       <div class="log-date">${formatDate(c.date)}</div>
       <div class="log-main">
-        <div class="log-desc">${c.description}</div>
+        <div class="log-desc">${escapeHtml(c.description)}</div>
         <div class="log-meta">Uge ${c.uge} · ${c.distance} km · ${formatPace(c.paceSeconds)}</div>
+        ${routeLink}
       </div>
-      <button class="log-delete" data-id="${c.id}" aria-label="Slet registrering">×</button>
+      <button class="log-delete" data-id="${escapeHtml(c.id)}" aria-label="Slet registrering">×</button>
     `;
     logEl.appendChild(li);
   });
   logEl.querySelectorAll(".log-delete").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (!confirm("Slet denne registrering?")) return;
-      await deleteCompletion(btn.dataset.id);
-      completions = await loadCompletions();
-      renderPlan();
-      renderLog();
-      renderStats();
+      try {
+        await deleteCompletion(btn.dataset.id);
+        completions = await loadCompletions();
+        renderPlan(); renderLog(); renderStats();
+      } catch (err) {
+        alert("Kunne ikke slette: " + (err?.message || err));
+      }
     });
   });
 }
@@ -168,6 +181,13 @@ function renderStats() {
 }
 
 // ==== Dialog ====
+function showDialogError(msg) {
+  const el = document.getElementById("dlg-error");
+  if (!msg) { el.textContent = ""; el.hidden = true; return; }
+  el.textContent = msg;
+  el.hidden = false;
+}
+
 function openDialog(uge, idx) {
   const week = plan.find(w => w.uge === uge);
   const training = week.trainings[idx];
@@ -181,19 +201,23 @@ function openDialog(uge, idx) {
   const dateInput = document.getElementById("dlg-date");
   const distInput = document.getElementById("dlg-distance");
   const paceInput = document.getElementById("dlg-pace");
+  const routeInput = document.getElementById("dlg-route");
   const deleteBtn = document.getElementById("dlg-delete");
 
   if (existing) {
     dateInput.value = existing.date;
     distInput.value = existing.distance;
     paceInput.value = formatPace(existing.paceSeconds).replace("/km", "");
+    routeInput.value = existing.routeUrl || "";
     deleteBtn.style.display = "";
   } else {
     dateInput.value = todayISO();
     distInput.value = training.distance;
     paceInput.value = "";
+    routeInput.value = "";
     deleteBtn.style.display = "none";
   }
+  showDialogError("");
 
   dialog.dataset.uge = uge;
   dialog.dataset.idx = idx;
@@ -213,9 +237,14 @@ async function submitDialog(e) {
   const date = document.getElementById("dlg-date").value;
   const distance = parseFloat(document.getElementById("dlg-distance").value);
   const paceSeconds = parsePace(document.getElementById("dlg-pace").value);
+  const routeUrl = document.getElementById("dlg-route").value.trim();
 
   if (!date || isNaN(distance)) {
-    alert("Angiv mindst dato og distance.");
+    showDialogError("Angiv mindst dato og distance.");
+    return;
+  }
+  if (routeUrl && !isValidUrl(routeUrl)) {
+    showDialogError("Rute-URL ser ikke gyldig ud. Skal starte med https://");
     return;
   }
 
@@ -227,14 +256,34 @@ async function submitDialog(e) {
     uge,
     trainingIndex: idx,
     type: training.type,
-    description: training.description
+    description: training.description,
+    routeUrl: routeUrl || null
   };
-  await saveCompletion(entry);
-  completions = await loadCompletions();
-  dialog.close();
-  renderPlan();
-  renderLog();
-  renderStats();
+
+  const submitBtn = document.querySelector('#training-form button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Gemmer…";
+  try {
+    await saveCompletion(entry);
+    completions = await loadCompletions();
+    dialog.close();
+    renderPlan(); renderLog(); renderStats();
+  } catch (err) {
+    console.error("Save failed:", err);
+    const code = err?.code || "";
+    let msg = err?.message || String(err);
+    if (code === "permission-denied") {
+      msg = "Firestore afviste skrivning (permission-denied). Tjek at Firestore Rules tillader skrivning til users/solo-runner/completions/*.";
+    } else if (code === "unavailable") {
+      msg = "Kan ikke nå Firestore. Tjek din netværksforbindelse.";
+    } else if (String(msg).includes("not-found") || String(msg).includes("NOT_FOUND")) {
+      msg = "Firestore-databasen findes ikke i projektet. Aktivér Firestore Database i Firebase Console.";
+    }
+    showDialogError(msg);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Gem";
+  }
 }
 
 async function deleteFromDialog() {
@@ -242,12 +291,14 @@ async function deleteFromDialog() {
   const existingId = dialog.dataset.existingId;
   if (!existingId) return;
   if (!confirm("Fjern denne træning som gennemført?")) return;
-  await deleteCompletion(existingId);
-  completions = await loadCompletions();
-  dialog.close();
-  renderPlan();
-  renderLog();
-  renderStats();
+  try {
+    await deleteCompletion(existingId);
+    completions = await loadCompletions();
+    dialog.close();
+    renderPlan(); renderLog(); renderStats();
+  } catch (err) {
+    showDialogError("Kunne ikke slette: " + (err?.message || err));
+  }
 }
 
 // ==== Tabs ====
@@ -277,13 +328,26 @@ async function init() {
     renderPlan();
   });
 
-  // Status i footer
   const status = document.getElementById("storage-status");
   await waitReady();
-  status.textContent = isFirebaseActive() ? "Synkroniseret via Firebase" : "Kun lokal (localStorage)";
-  status.className = isFirebaseActive() ? "status status--online" : "status status--local";
+  if (isFirebaseActive()) {
+    status.textContent = "Synkroniseret via Firebase";
+    status.className = "status status--online";
+  } else {
+    const errMsg = lastError();
+    status.textContent = errMsg
+      ? "Firebase fejlede – kun lokal (se konsol)"
+      : "Kun lokal (localStorage)";
+    status.className = "status status--local";
+    status.title = errMsg || "";
+  }
 
-  completions = await loadCompletions();
+  try {
+    completions = await loadCompletions();
+  } catch (err) {
+    console.error("loadCompletions failed:", err);
+    completions = [];
+  }
   renderPlan();
   renderLog();
   renderStats();
