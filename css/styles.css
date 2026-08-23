@@ -717,6 +717,7 @@ body {
 }
 
 /* ===== Login-gate ===== */
+.auth-gate[hidden] { display: none !important; }
 .auth-gate {
   position: fixed;
   inset: 0;
