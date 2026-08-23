@@ -94,6 +94,119 @@ const ROTATION = [
   ]}
 ];
 
+/**
+ * Beregner forventede datoer for ikke-gennemførte træninger baseret på:
+ *  - Base: seneste gennemførte løbs dato (eller i dag hvis ingen)
+ *  - Samme uge:
+ *      · 2-løbs uge: 3 hviledage mellem løbene (+4 dage)
+ *      · 3-løbs uge: 1 hviledag mellem løbene (+2 dage)
+ *  - Skift til ny uge: 1 hviledag mellem sidste løb i forrige uge og
+ *    første løb i næste uge (+2 dage).
+ *
+ * Returnerer et map: { "u{uge}-t{idx}": "YYYY-MM-DD" }
+ *
+ * @param {Array} plan - Trænings-plan (fra generatePlan)
+ * @param {Array} completions - Gennemførte løb (med .uge, .trainingIndex, .date)
+ * @returns {Object} Map af nøgle → ISO-dato
+ */
+function computeExpectedDates(plan, completions) {
+  const result = {};
+  const completionMap = new Map();
+  completions.forEach(c => {
+    completionMap.set(`u${c.uge}-t${c.trainingIndex}`, c.date);
+  });
+
+  // Find anker-dato: seneste gennemførte løb, eller i dag
+  let anchorDate = null;
+  let anchorWeekIdx = -1;
+  let anchorTrainingCount = 0;
+
+  if (completions.length > 0) {
+    // Sorter completions efter dato, tag den seneste
+    const sorted = [...completions].sort((a, b) => a.date.localeCompare(b.date));
+    const last = sorted[sorted.length - 1];
+    anchorDate = last.date;
+    anchorWeekIdx = plan.findIndex(w => w.uge === last.uge);
+    anchorTrainingCount = last.trainingIndex + 1; // 0-indekseret + 1 = antal "brugte" i den uge
+  }
+
+  // Start-punkt for iteration: første ikke-gennemførte træning
+  let startWeekIdx = 0;
+  let startTrainingIdx = 0;
+
+  if (anchorDate !== null) {
+    startWeekIdx = anchorWeekIdx;
+    startTrainingIdx = anchorTrainingCount; // næste træning efter den seneste gennemførte
+    // Hvis vi er ud over ugens træninger, gå til næste uge
+    while (
+      startWeekIdx < plan.length &&
+      startTrainingIdx >= plan[startWeekIdx].trainings.length
+    ) {
+      startWeekIdx++;
+      startTrainingIdx = 0;
+    }
+  }
+
+  // Hvis ingen anker: startdato = i dag (før første ikke-gennemførte)
+  // vi vil sætte første ikke-gennemførte til i dag
+  let prevDate = anchorDate; // null hvis intet anker
+  let prevWeekIdx = anchorDate !== null ? anchorWeekIdx : -1;
+
+  const addDays = (isoDate, days) => {
+    const d = new Date(isoDate + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+
+  const todayLocal = () => {
+    const d = new Date();
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  };
+
+  // Iterér gennem alle træninger fra start-punktet og fremad
+  for (let wIdx = startWeekIdx; wIdx < plan.length; wIdx++) {
+    const week = plan[wIdx];
+    const numTrainings = week.trainings.length;
+    const tStart = (wIdx === startWeekIdx) ? startTrainingIdx : 0;
+
+    for (let tIdx = tStart; tIdx < numTrainings; tIdx++) {
+      const key = `u${week.uge}-t${tIdx}`;
+
+      // Spring over hvis træningen allerede er gennemført
+      // (kan ske hvis gennemførte løb ikke er i kronologisk rækkefølge
+      //  ift. plan-rækkefølgen)
+      if (completionMap.has(key)) {
+        prevDate = completionMap.get(key);
+        prevWeekIdx = wIdx;
+        continue;
+      }
+
+      let expected;
+      if (prevDate === null) {
+        // Ingen anker overhovedet → første ikke-gennemførte = i dag
+        expected = todayLocal();
+      } else if (wIdx === prevWeekIdx) {
+        // Samme uge som forrige
+        const gap = numTrainings === 2 ? 4 : 2; // 2-løbs-uge: 3 hviledage; ellers 1 hviledag
+        expected = addDays(prevDate, gap);
+      } else {
+        // Ny uge → 1 hviledag efter sidste løb
+        expected = addDays(prevDate, 2);
+      }
+
+      result[key] = expected;
+      prevDate = expected;
+      prevWeekIdx = wIdx;
+    }
+  }
+
+  return result;
+}
+
 // Genererer plan for et givent antal uger
 function generatePlan(numWeeks = 24) {
   const plan = [];

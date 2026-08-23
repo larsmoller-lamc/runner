@@ -1,4 +1,5 @@
 import { loadCompletions, saveCompletion, deleteCompletion, isFirebaseActive, waitReady, lastError } from "./storage.js";
+import { initAuth, signIn, signOutUser, onAuthChange, ALLOWED_EMAIL_STR } from "./auth.js";
 
 const TYPE_LABEL = {
   rolig: "Rolig",
@@ -10,6 +11,18 @@ const TYPE_LABEL = {
 
 let completions = [];
 let plan = generatePlan(24);
+let expectedDates = {}; // Map: "u{uge}-t{idx}" → ISO-dato
+
+// Kort dansk dato-format (fx "12. mar")
+function formatDateShort(iso) {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("da-DK", { day: "numeric", month: "short" });
+}
+
+function recomputeExpectedDates() {
+  expectedDates = computeExpectedDates(plan, completions);
+}
 
 // ==== Helpers ====
 function trainingKey(uge, index) { return `u${uge}-t${index}`; }
@@ -64,6 +77,12 @@ function escapeHtml(s) {
 
 // ==== Rendering ====
 function renderPlan() {
+  // Gem scroll-position så vi ikke hopper tilbage til toppen efter re-render
+  const scrollY = window.scrollY;
+
+  // Genberegn forventede datoer inden render
+  recomputeExpectedDates();
+
   const container = document.getElementById("plan-container");
   container.innerHTML = "";
 
@@ -102,6 +121,7 @@ function renderPlan() {
       const list = weekEl.querySelector(".training-list");
       week.trainings.forEach((t, i) => {
         const done = findCompletion(week.uge, i);
+        const expectedISO = !done ? expectedDates[trainingKey(week.uge, i)] : null;
         const li = document.createElement("li");
         li.className = "training" + (done ? " training--done" : "");
         li.innerHTML = `
@@ -111,6 +131,7 @@ function renderPlan() {
               <span class="training-top">
                 <span class="training-type type--${t.type}">${TYPE_LABEL[t.type] || t.type}</span>
                 <span class="training-dist">${t.distance} km</span>
+                ${expectedISO ? `<span class="training-planned">📅 ${formatDateShort(expectedISO)}</span>` : ""}
               </span>
               <span class="training-desc">${escapeHtml(t.description)}</span>
               ${done ? `<span class="training-done-line">${formatDate(done.date)} · ${done.distance} km · ${formatPace(done.paceSeconds)}${done.routeUrl ? " · 🗺" : ""}</span>` : ""}
@@ -131,6 +152,11 @@ function renderPlan() {
       const idx = parseInt(btn.dataset.idx, 10);
       openDialog(uge, idx);
     });
+  });
+
+  // Genskab scroll-position efter DOM'en er tegnet
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollY);
   });
 }
 
@@ -212,7 +238,9 @@ function openDialog(uge, idx) {
     routeInput.value = existing.routeUrl || "";
     deleteBtn.style.display = "";
   } else {
-    dateInput.value = todayISO();
+    // Prefill med forventet dato hvis vi har en, ellers i dag
+    const expectedISO = expectedDates[trainingKey(uge, idx)];
+    dateInput.value = expectedISO || todayISO();
     distInput.value = training.distance;
     paceInput.value = "";
     routeInput.value = "";
@@ -314,6 +342,54 @@ function setupTabs() {
   });
 }
 
+// ==== Login-skærm ====
+function showLoginScreen(state) {
+  const gate = document.getElementById("auth-gate");
+  const appRoot = document.getElementById("app-root");
+  const errEl = document.getElementById("auth-error");
+  const spinner = document.getElementById("auth-spinner");
+
+  if (!gate) return;
+
+  if (state.status === "unknown") {
+    gate.hidden = false;
+    appRoot.hidden = true;
+    spinner.hidden = false;
+    errEl.hidden = true;
+    return;
+  }
+
+  spinner.hidden = true;
+
+  if (state.status === "signed-in") {
+    gate.hidden = true;
+    appRoot.hidden = false;
+    return;
+  }
+
+  gate.hidden = false;
+  appRoot.hidden = true;
+
+  if (state.status === "rejected") {
+    errEl.hidden = false;
+    errEl.textContent = `Kontoen ${state.rejectedEmail} har ikke adgang. Log ind med den godkendte Google-konto.`;
+  } else {
+    errEl.hidden = true;
+  }
+}
+
+async function loadAndRender() {
+  try {
+    completions = await loadCompletions();
+  } catch (err) {
+    console.error("loadCompletions failed:", err);
+    completions = [];
+  }
+  renderPlan();
+  renderLog();
+  renderStats();
+}
+
 // ==== Init ====
 async function init() {
   setupTabs();
@@ -329,8 +405,35 @@ async function init() {
     renderPlan();
   });
 
-  const status = document.getElementById("storage-status");
+  // Login/logout knapper
+  const loginBtn = document.getElementById("login-btn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      loginBtn.disabled = true;
+      try {
+        await signIn();
+      } catch (err) {
+        const errEl = document.getElementById("auth-error");
+        errEl.hidden = false;
+        errEl.textContent = "Login mislykkedes: " + (err?.message || err);
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+  }
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      if (!confirm("Log ud?")) return;
+      try { await signOutUser(); } catch (e) { console.error(e); }
+    });
+  }
+
+  // Vent på Firebase (auth + firestore samme app)
   await waitReady();
+
+  // Vis storage-status
+  const status = document.getElementById("storage-status");
   if (isFirebaseActive()) {
     status.textContent = "Synkroniseret via Firebase";
     status.className = "status status--online";
@@ -343,15 +446,30 @@ async function init() {
     status.title = errMsg || "";
   }
 
-  try {
-    completions = await loadCompletions();
-  } catch (err) {
-    console.error("loadCompletions failed:", err);
-    completions = [];
+  // Hvis Firebase ikke er aktiv, spring auth over (fallback til localStorage)
+  if (!isFirebaseActive()) {
+    document.getElementById("auth-gate").hidden = true;
+    document.getElementById("app-root").hidden = false;
+    await loadAndRender();
+    return;
   }
-  renderPlan();
-  renderLog();
-  renderStats();
+
+  // Initialiser auth og lyt på ændringer
+  onAuthChange(state => {
+    showLoginScreen(state);
+    if (state.status === "signed-in") {
+      loadAndRender();
+    }
+  });
+
+  try {
+    await initAuth();
+  } catch (err) {
+    console.error("Auth init failed:", err);
+    const errEl = document.getElementById("auth-error");
+    errEl.hidden = false;
+    errEl.textContent = "Kunne ikke initialisere login: " + (err?.message || err);
+  }
 }
 
 init();
