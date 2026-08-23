@@ -77,27 +77,17 @@ export async function signOutUser() {
  */
 export async function initAuth() {
   const auth = getAuthInstance();
-  console.log("[auth] initAuth() start");
 
   try {
     await setPersistence(auth, browserLocalPersistence);
-    console.log("[auth] persistence sat");
   } catch (e) {
-    console.warn("[auth] kunne ikke sætte persistence:", e);
+    console.warn("Kunne ikke sætte auth-persistence:", e);
   }
 
-  // Håndter redirect-resultat FØR vi sætter onAuthStateChanged-lytteren,
-  // så vi ikke først fejlagtigt viser login-siden fordi user endnu er null.
   try {
-    const result = await getRedirectResult(auth);
-    if (result) {
-      console.log("[auth] getRedirectResult: bruger fundet:", result.user?.email);
-    } else {
-      console.log("[auth] getRedirectResult: ingen ventende redirect");
-    }
+    await getRedirectResult(auth);
   } catch (err) {
-    console.error("[auth] getRedirectResult fejlede:", err);
-    // Vis fejl i UI så den ikke bare forsvinder
+    console.error("Redirect-result fejl:", err);
     setState({
       status: "signed-out",
       user: null,
@@ -109,10 +99,9 @@ export async function initAuth() {
   return new Promise(resolve => {
     let firstResolved = false;
     onAuthStateChanged(auth, async user => {
-      console.log("[auth] onAuthStateChanged:", user?.email || "(null)");
       if (user && user.email && user.email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()) {
         const rejected = user.email;
-        console.warn("[auth] uautoriseret email:", rejected);
+        console.warn("Uautoriseret email:", rejected);
         try { await fbSignOut(auth); } catch (e) { /* noop */ }
         setState({ status: "rejected", user: null, rejectedEmail: rejected });
       } else if (user) {

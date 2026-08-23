@@ -344,14 +344,12 @@ function setupTabs() {
 
 // ==== Login-skærm ====
 function showLoginScreen(state) {
-  console.log("[app] showLoginScreen kaldt med:", state.status);
   const gate = document.getElementById("auth-gate");
   const appRoot = document.getElementById("app-root");
   const errEl = document.getElementById("auth-error");
   const spinner = document.getElementById("auth-spinner");
 
-  if (!gate) { console.warn("[app] auth-gate element mangler"); return; }
-  if (!appRoot) { console.warn("[app] app-root element mangler"); return; }
+  if (!gate || !appRoot) return;
 
   if (state.status === "unknown") {
     gate.hidden = false;
@@ -364,7 +362,6 @@ function showLoginScreen(state) {
   if (spinner) spinner.hidden = true;
 
   if (state.status === "signed-in") {
-    console.log("[app] signed-in → viser app");
     gate.hidden = true;
     appRoot.hidden = false;
     return;
@@ -461,7 +458,6 @@ async function init() {
 
   // Initialiser auth og lyt på ændringer
   onAuthChange(state => {
-    console.log("[app] onAuthChange callback:", state.status);
     showLoginScreen(state);
     if (state.status === "signed-in") {
       loadAndRender();
