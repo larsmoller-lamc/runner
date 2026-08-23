@@ -4,7 +4,6 @@
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged,
@@ -56,16 +55,10 @@ export async function signIn() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-    || window.navigator.standalone === true;
-
+  // Brug altid redirect – popup rammer Cross-Origin-Opener-Policy
+  // problemer på både desktop og mobil.
   try {
-    if (isMobile || isStandalone) {
-      await signInWithRedirect(auth, provider);
-    } else {
-      await signInWithPopup(auth, provider);
-    }
+    await signInWithRedirect(auth, provider);
   } catch (err) {
     console.error("Sign-in failed:", err);
     throw err;
