@@ -11,7 +11,7 @@ import {
   signOut as fbSignOut,
   setPersistence,
   browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const ALLOWED_EMAIL = "larsmollerchristensen@gmail.com";
 

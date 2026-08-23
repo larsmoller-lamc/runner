@@ -17,6 +17,8 @@ async function tryInitFirebase() {
     const appMod = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js");
     const fsMod  = await import("https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js");
     const app = appMod.initializeApp(firebaseConfig);
+    // Eksponér app globalt så auth.js kan genbruge samme instans
+    window.firebaseApp = app;
     db = fsMod.getFirestore(app);
     firebaseApi = fsMod;
     useFirebase = true;
