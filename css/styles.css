@@ -702,6 +702,156 @@ body {
   * { transition: none !important; }
 }
 
+/* ===== Planlagt dato-chip på fremtidige træninger ===== */
+.training-planned {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-mute);
+  letter-spacing: 0.2px;
+  padding: 2px 7px;
+  background: var(--paper-soft);
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ===== Login-gate ===== */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  background: var(--base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  padding-top: calc(24px + env(safe-area-inset-top, 0));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+}
+
+.auth-card {
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  color: var(--ink);
+}
+
+.auth-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.auth-logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.auth-title {
+  font-weight: 800;
+  font-size: 32px;
+  margin: 0 0 4px;
+  letter-spacing: -0.6px;
+  color: var(--ink);
+}
+
+.auth-sub {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin: 0 0 32px;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--paper);
+  color: #3c4043;
+  border: none;
+  padding: 13px 20px;
+  border-radius: var(--r-sm);
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.auth-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.auth-btn:active:not(:disabled) { transform: translateY(1px); }
+.auth-btn:disabled { opacity: 0.6; cursor: wait; }
+.auth-btn-icon { flex-shrink: 0; }
+
+.auth-spinner {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 24px;
+  min-height: 12px;
+}
+.auth-spinner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+  animation: authDot 1.2s infinite ease-in-out;
+}
+.auth-spinner-dot:nth-child(2) { animation-delay: 0.15s; }
+.auth-spinner-dot:nth-child(3) { animation-delay: 0.30s; }
+@keyframes authDot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.auth-error {
+  margin: 20px auto 0;
+  max-width: 280px;
+  padding: 10px 14px;
+  background: rgba(220, 47, 47, 0.15);
+  border: 1px solid rgba(220, 47, 47, 0.4);
+  border-radius: var(--r-sm);
+  color: #ffb8b8;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.auth-note {
+  margin: 24px 0 0;
+  font-size: 11px;
+  color: var(--ink-mute);
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+/* ===== Logout-knap ===== */
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--ink-mute);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 6px 10px;
+  margin-left: 12px;
+  border-radius: var(--r-sm);
+  text-transform: uppercase;
+  transition: color 0.15s, background 0.15s;
+}
+.logout-btn:hover {
+  color: var(--danger);
+  background: rgba(220, 47, 47, 0.06);
+}
+
 /* ===== Meget små skærme ===== */
 @media (max-width: 360px) {
   .stat-val { font-size: 20px; }
