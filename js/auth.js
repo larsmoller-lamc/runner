@@ -4,6 +4,7 @@
 import {
   getAuth,
   GoogleAuthProvider,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged,
@@ -55,13 +56,25 @@ export async function signIn() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // Brug altid redirect – popup rammer Cross-Origin-Opener-Policy
-  // problemer på både desktop og mobil.
+  // Popup som primær metode – virker på både desktop og iOS uden
+  // tredjeparts-cookie-problemer. Redirect som fallback hvis popup
+  // blokeres (fx PWA-standalone mode eller aggressiv popup-blocker).
   try {
-    await signInWithRedirect(auth, provider);
+    await signInWithPopup(auth, provider);
   } catch (err) {
-    console.error("Sign-in failed:", err);
-    throw err;
+    console.warn("Popup fejlede, prøver redirect:", err?.code);
+    // Fald tilbage til redirect ved kendte popup-fejl
+    const fallbackCodes = [
+      "auth/popup-blocked",
+      "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request",
+      "auth/operation-not-supported-in-this-environment"
+    ];
+    if (fallbackCodes.includes(err?.code)) {
+      await signInWithRedirect(auth, provider);
+    } else {
+      throw err;
+    }
   }
 }
 
